@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux'
-import { View, TextInput, Button, Text } from 'react-native';
+import { View, TextInput, Button, Text, AsyncStorage } from 'react-native';
 import axios from 'axios';
 
 import * as actions from '../actions';
@@ -14,42 +14,53 @@ class LoginForm extends Component {
     this.passwordOnChange = this.passwordOnChange.bind(this);
   }
 
+  setAuth(username, password) {
+    console.log('setting auth')
+    const data = JSON.stringify({username, password});
+    console.log('got data');
+    AsyncStorage.setItem('auth', data);
+  }
+
   signUpPressed() {
+    this.setAuth();
     const { username, password } = this.props.login;
     const { logIn, changePage, error } = this.props;
-    axios.get('http://localhost:3000/users')
-      .then((response) => {
-        for(user of response.data) {
-          if(user.username === username) {
-            error('that username is already taken');
-            return;
-          }
-        }
+
+    axios.get(`http://localhost:3000/user/${username}/${password}`)
+    .then((response) => {
+      if(response.data === null) {
         axios.post('http://localhost:3000/users/new', { username, password })
         .then((response) => {
+          this.setAuth(username, password);
           logIn({ username, password });
           changePage('choose');
         })
         .catch((error) => {
-          console.log(error);
+          error('there was an error signing in');
         });
-      });
+      } else {
+        error('that username or password is already taken');
+      }
+    });
   }
 
   loginPressed() {
     const { username, password } = this.props.login;
-    const { logIn, changePage, error } = this.props
-    axios.get('http://localhost:3000/users')
-      .then((response) => {
-        for(user of response.data) {
-          if(user.username === username && user.password === password) {
-            logIn({ username, password });
-            changePage('choose');
-            return;
-          }
-          error('your username or password is incorrect');
-        }
-      });
+    const { logIn, changePage, error } = this.props;
+
+    axios.get(`http://localhost:3000/user/${username}/${password}`)
+    .then((response) => {
+      if(response.data !== null) {
+        this.setAuth(username, password);
+        logIn({username, password});
+        changePage('choose');
+      } else {
+        error('your username or password was incorect');
+      }
+    })
+    .catch((error) => {
+      error('there was an error signing in');
+    });
   }
 
   usernameOnChange(text) {

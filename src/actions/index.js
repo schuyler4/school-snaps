@@ -26,3 +26,17 @@ export function error(warning) {
     warning
   }
 }
+
+export function classPassword(password) {
+  return {
+    type: 'CLASS_PASSWORD',
+    password
+  }
+}
+
+export function addTeacher(name) {
+  return {
+    type: 'ADD_TEACHER',
+    name
+  }
+}

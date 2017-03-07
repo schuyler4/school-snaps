@@ -1,17 +1,46 @@
 import React, { Component } from 'react';
-import { View, TextInput, Button } from 'react-native';
+import { View, TextInput, Button, Text } from 'react-native';
 import { connect } from 'react-redux';
 import axios from 'axios';
 
 import * as actions from '../actions';
 
 class NewClassRoom extends Component {
+  constructor() {
+    super()
+    this.onPress = this.onPress.bind(this);
+    this.onChange = this.onChange.bind(this);
+  }
+
+  componentDidMount() {
+    console.log('component mounted');
+  }
+
   onPress() {
-    const data = {password: this.props.newClassRoom.password};
-    axios.post('http://localhost:3000/classroom/new', data)
-      .then((response) => {
-        this.props.changePage('classroom');
-      });
+    const { changePage, classPassword, addTeacher } = this.props;
+    const password = this.props.newClassRoom.password;
+
+    axios.get(`http://localhost:3000/classroom/${password}`)
+    .then((response) => {
+      if(response.data === null) {
+        const data = {
+          password: this.props.newClassRoom.password,
+          teacher: this.props.auth.username
+        };
+        axios.post('http://localhost:3000/classroom/new', data)
+        .then((response) => {
+          //addTeacher(this.props.auth.username);
+          //classPassword(this.props.newClassRoom.password);
+          console.log('changing the page');
+          changePage('classroom');
+        })
+        .catch((error) => {
+          this.props.error('there was an error createing a classrooom');
+        });
+      }
+    }).catch((error) => {
+      this.props.error('there was an error createing a classrooom');
+    });
   }
 
   onChange(text) {
@@ -19,15 +48,19 @@ class NewClassRoom extends Component {
   }
 
   render() {
+    const { input, errorText } = style;
+
     return (
       <View>
         <TextInput
-          style={style.input}
+          style={input}
           placeholder="class password"
-          value={this.props.newClassRoom.text}
+          value={this.props.newClassRoom.password}
           autoCapitalize="none"
+          onChangeText={this.onChange}
         />
         <Button title="Start Classroom" onPress={this.onPress} />
+        <Text style={errorText}> {this.props.newClassRoom.errorText} </Text>
       </View>
     );
   }
@@ -42,11 +75,17 @@ const style = {
     margin: 5,
     marginTop: 20
   },
+  errorText: {
+    textAlign: 'center',
+    fontSize: 30,
+    color: 'red'
+  }
 }
 
 function mapStateToProps(state) {
   return {
-    newClassRoom: state.newClassRoom
+    newClassRoom: state.newClassRoom,
+    auth: state.auth
   }
 }
 
